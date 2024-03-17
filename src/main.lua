@@ -92,9 +92,21 @@ function split(inp, sep) -- Custom split str into tbl
 	return t
 end
 
+function input_handler(str)
+	if str == "q" then
+		return 1
+	end
+	return 0
+end
+
+function draw_screen()
+	
+end
+
 local t_size = {} -- Terminal size
 local width, height = get_terminal_size()
 t_size.width, t_size.height = width, height
+local handle_list
 local handle, text = nil, ""
 
 if #arg ~= 0 then
@@ -104,6 +116,7 @@ if #arg ~= 0 then
 		-- Has a file name
 		handle = io.open(arg[1], "r")
 		text = handle:read("*a")
+		handle_list[1] = handle
 	end
 end
 
@@ -210,6 +223,10 @@ while true do
 			io.write("\27[" .. tostring(cfg.n_of_lines + 3) .. ";1H:")
 			local inp2 = io.read()
 			io.write("\27[0m")
+			local r = input_handler(inp2)
+			if r == 1 then
+				os.exit(0)
+			end
 		elseif inp == "`" then -- Clear screen
 			io.write("\27[2J")
 		elseif inp == "\27[A" then -- Arrow up
