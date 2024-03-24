@@ -28,42 +28,6 @@ function getch()
 	return key
 end
 
---[[
-
-function get_terminal_size2()
-	local terminal_size = {}
-	
-	-- Send ANSI escape sequence to get the cursor position
-	io.write("\27[999;999H")
-	io.write("\27[6n")
-	io.flush()
-	
-	-- Read the cursor position report
-	local report = io.read("*a")
-	
-	-- Extract row and column from the report
-	local row, col = report:match("(%d+);(%d+)R")
-	
-	-- Convert row and column to integers and store in the result table
-	terminal_size.width = tonumber(col)
-	terminal_size.height = tonumber(row)
-	
-	io.write(terminal_size.width, ", ", terminal_size.height)
-	io.read()
-	
-	return terminal_size
-end
-
--- Function to retrieve terminal size
-function get_terminal_size3()
-    io.write("\027[18t")  -- Send ANSI escape sequence for requesting terminal size
-    io.flush()  -- Ensure the escape sequence is sent immediately
-    local response = io.read()  -- Read the response from the terminal
-    local _, _, width, height = response:find("\027%[(%d+);(%d+)R")  -- Parse the response
-    return tonumber(width), tonumber(height)  -- Return width and height as numbers
-end
-]]
-
 -- Function to retrieve terminal size
 -- Got this baby from ChatGPT
 function get_terminal_size()
@@ -92,16 +56,29 @@ function split(inp, sep) -- Custom split str into tbl
 	return t
 end
 
-function input_handler(str)
+--[[
+	
+		<< Modifiable >>
+	
+]]
+
+function m_command_input(str)
 	if str == "q" then
 		return 1
 	end
 	return 0
 end
 
-function draw_screen()
+function m_draw_screen()
 	
 end
+
+
+--[[
+	
+		Main code block
+	
+]]
 
 local t_size = {} -- Terminal size
 local width, height = get_terminal_size()
@@ -109,9 +86,16 @@ t_size.width, t_size.height = width, height
 local handle_list
 local handle, text = nil, ""
 
+os.execute("mkdir " .. home .. "/.mint/; touch " .. home .. "/.mintrc")
+local installed_packages_file = io.open(home .. "/.mint/installed_packages.txt", "a")
+
+if installed_packages_file == nil then
+	
+end
+
 if #arg ~= 0 then
 	if arg[1] == "--install" then
-		-- Will be made later
+	
 	else
 		-- Has a file name
 		handle = io.open(arg[1], "r")
@@ -120,7 +104,9 @@ if #arg ~= 0 then
 	end
 end
 
-os.execute("mkdir " .. home .. "/.mint/; touch " .. home .. "/.mintrc")
+local installed_packages = installed_packages_file:read("*a")
+installed packages = split(installed_packages, "\n")
+installed_packages_file:close()
 
 -- Open cfg file
 rchan = io.open(home .. "/.mintrc", "r")
@@ -141,7 +127,9 @@ local cfg = { -- Default values
 
 for i = 1, #cfg do
 	-- I may create a parser function for this, it is getting repetitive
-	if rctbl[i][1] == "n_of_lines" then -- Number of lines to be displayed
+	if rctbl[i][1]:sub(1, 1) == "#" then
+		-- Comment
+	elseif rctbl[i][1] == "n_of_lines" then -- Number of lines to be displayed
 		if rctbl[i][2] == "auto" then
 			cfg.n_of_lines = t_size.height - 3
 		else
@@ -149,7 +137,7 @@ for i = 1, #cfg do
 			if cfg.n_of_lines == nil then
 				io.write("SYNTAX ERROR IN ~/.mintrc\nline: " .. tostring(i) .. "\nInvalid value for n_of_lines: " .. rctbl[i][2] .. "\nPress Enter to exit.")
 				io.read()
-				os.exit()
+				os.exit(101)
 			end	
 		end
 	elseif rctbl[i][1] == "width" then -- Window width
@@ -160,7 +148,7 @@ for i = 1, #cfg do
 			if cfg.width == nil then
 				io.write("SYNTAX ERROR IN ~/.mintrc\nline: " .. tostring(i) .. "\nInvalid value for width: " .. rctbl[i][2] .. "\nPress Enter to exit.")
 				io.read()
-				os.exit()
+				os.exit(101)
 			end	
 		end
 	elseif rctbl[i][1] == "lnum" then -- Space given for line numbers (not too sure how to describe it)
@@ -168,8 +156,12 @@ for i = 1, #cfg do
 		if cfg.lnum == nil then
 			io.write("SYNTAX ERROR IN ~/.mintrc\nline: " .. tostring(i) .. "\nInvalid value for lnum: " .. rctbl[i][2] .. "\nPress Enter to exit.")
 			io.read()
-			os.exit()
+			os.exit(101)
 		end
+	else
+		io.write("SYNTAX ERROR IN ~/.mintrc\nline: " .. tostring(i) .. "\nInvalid command: " .. rctbl[i][1] .. "\nPress Enter to exit.")
+		io.read()
+		os.exit(100)
 	end
 end
 
@@ -189,7 +181,7 @@ local mode = 0
 --[[
 0	general
 1	insert
-2	file
+2	file oper
 
 ]]
 
@@ -223,7 +215,7 @@ while true do
 			io.write("\27[" .. tostring(cfg.n_of_lines + 3) .. ";1H:")
 			local inp2 = io.read()
 			io.write("\27[0m")
-			local r = input_handler(inp2)
+			local r = m_command_input(inp2)
 			if r == 1 then
 				os.exit(0)
 			end
